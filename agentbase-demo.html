@@ -918,7 +918,14 @@
 <form name="waitlist" method="POST" data-netlify="true" onsubmit="event.preventDefault(); joinWaitlist();">
   <input type="hidden" name="form-name" value="waitlist" />
 
-  <input class="cta-input" type="email" name="email" placeholder="you@startup.com" required />
+  <input 
+  class="cta-input" 
+  type="email" 
+  name="email" 
+  id="emailInput" 
+  placeholder="you@startup.com" 
+  required
+/>
   
   <button class="btn-primary" type="submit">Join waitlist →</button>
 </form>
