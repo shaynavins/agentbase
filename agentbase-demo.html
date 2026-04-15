@@ -910,42 +910,37 @@
 <hr class="full-divider">
 
 <!-- CTA / Waitlist -->
-<div class="cta-section" id="waitlist">
-  <div class="section-label" style="display:block;text-align:center;margin-bottom:1rem">Early access</div>
-  <h2>Stop writing backends.<br><em>Start shipping products.</em></h2>
-  <p>Join the waitlist. First 100 developers get free access and direct line to the founder.</p>
-  <div class="cta-form">
-<form name="waitlist" method="POST" netlify>
-  <p>
-    <label>Name <input type="text" name="name" /></label>
-  </p>
-  <p>
-    <label>Email <input type="email" name="email" /></label>
-  </p>
-  <p>
-    <button type="submit">Send</button>
-  </p>
-  
-  <input type="hidden" name="form-name" value="waitlist" />
+<div class="cta-form">
+  <form name="waitlist" method="POST" data-netlify="true">
 
-  <input 
-    class="cta-input" 
-    type="email" 
-    name="email" 
-    id="emailInput" 
-    placeholder="you@startup.com" 
-    required
-  />
+    <!-- Required for Netlify -->
+    <input type="hidden" name="form-name" value="waitlist" />
 
-  <button class="btn-primary" type="submit">
-    Join waitlist →
-  </button>
+    <!-- Name -->
+    <input 
+      class="cta-input" 
+      type="text" 
+      name="name" 
+      placeholder="Your name"
+      required
+    />
 
-</form>
-    <input class="cta-input" type="email" id="emailInput" placeholder="you@startup.com">
-    <button class="btn-primary" onclick="joinWaitlist()">Join waitlist →</button>
-  </div>
-  <p style="font-size:11px;color:var(--faint);margin-top:1rem;font-family:var(--mono)">No spam. No pitch decks. Just early access.</p>
+    <!-- Email -->
+    <input 
+      class="cta-input" 
+      type="email" 
+      name="email" 
+      id="emailInput"
+      placeholder="you@startup.com"
+      required
+    />
+
+    <!-- Button -->
+    <button class="btn-primary" type="submit">
+      Join waitlist →
+    </button>
+
+  </form>
 </div>
  
 
