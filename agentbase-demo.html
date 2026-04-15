@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentBase — The Backend That Engineers Itself</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --off-black: #111111;
+    --card: #161616;
+    --border: rgba(255,255,255,0.08);
+    --border-bright: rgba(255,255,255,0.15);
+    --white: #f5f2ee;
+    --muted: rgba(245,242,238,0.45);
+    --faint: rgba(245,242,238,0.22);
+    --accent: #e8f55a;
+    --accent-dim: rgba(232,245,90,0.12);
+    --accent-mid: rgba(232,245,90,0.25);
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.1);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.1);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.1);
+    --mono: 'DM Mono', monospace;
+    --serif: 'Instrument Serif', serif;
+    --sans: 'Geist', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── Grid overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2.5rem;
+    height: 56px;
+    background: rgba(10,10,10,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: .04em;
+  }
+  .nav-links { display: flex; gap: 2rem; }
+  .nav-links a {
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--white); }
+  .nav-cta {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 18px;
+    background: var(--accent);
+    color: var(--black);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity .2s;
+  }
+  .nav-cta:hover { opacity: .85; }
+
+  /* ── Hero ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+    z-index: 1;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent-mid);
+    background: var(--accent-dim);
+    padding: 5px 14px;
+    border-radius: 100px;
+    margin-bottom: 2.5rem;
+    animation: fadeUp .6s ease both;
+  }
+  .badge-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: blink 2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(3rem, 7vw, 6.5rem);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -.02em;
+    margin-bottom: 1.5rem;
+    animation: fadeUp .7s .1s ease both;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: var(--muted);
+    max-width: 580px;
+    line-height: 1.65;
+    margin-bottom: 3rem;
+    animation: fadeUp .7s .2s ease both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeUp .7s .3s ease both;
+  }
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 12px 28px;
+    background: var(--accent);
+    color: var(--black);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity .2s, transform .15s;
+  }
+  .btn-primary:hover { opacity: .88; transform: translateY(-1px); }
+  .btn-secondary {
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 12px 28px;
+    background: transparent;
+    color: var(--white);
+    border: 1px solid var(--border-bright);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background .2s, transform .15s;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.05); transform: translateY(-1px); }
+
+  /* Scroll indicator */
+  .scroll-hint {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    animation: fadeUp .7s .6s ease both;
+  }
+  .scroll-hint span {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    color: var(--faint);
+    text-transform: uppercase;
+  }
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--faint), transparent);
+    animation: scrollPulse 2s infinite;
+  }
+  @keyframes scrollPulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Section base ── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 6rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 400;
+    line-height: 1.1;
+    margin-bottom: 1.25rem;
+  }
+  .section-title em { font-style: italic; color: var(--muted); }
+  .section-sub {
+    font-size: 1rem;
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 3.5rem;
+  }
+
+  /* ── The problem ── */
+  .problem-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  @media(max-width:700px){ .problem-grid { grid-template-columns: 1fr; } }
+  .problem-card {
+    background: var(--off-black);
+    padding: 2rem;
+    transition: background .2s;
+  }
+  .problem-card:hover { background: var(--card); }
+  .problem-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    margin-bottom: 1rem;
+  }
+  .problem-card h3 {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: .6rem;
+    color: var(--white);
+  }
+  .problem-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ── Live demo terminal ── */
+  .demo-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: .75rem 1.25rem;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.r { background: #ff5f56; }
+  .dot.y { background: #ffbd2e; }
+  .dot.g { background: #27c93f; }
+  .terminal-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--faint);
+    margin-left: .5rem;
+  }
+
+  .demo-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 420px;
+  }
+  @media(max-width:700px){ .demo-layout { grid-template-columns: 1fr; } }
+
+  .demo-input-side {
+    padding: 2rem;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .demo-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: .4rem;
+  }
+  .intent-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .intent-chip {
+    font-size: 12.5px;
+    font-family: var(--mono);
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+    text-align: left;
+  }
+  .intent-chip:hover, .intent-chip.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .run-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 10px;
+    background: var(--accent);
+    color: var(--black);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: opacity .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .run-btn:hover { opacity: .85; }
+  .run-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .demo-output-side {
+    padding: 2rem;
+    font-family: var(--mono);
+    font-size: 12px;
+    overflow: auto;
+    max-height: 480px;
+  }
+  .output-line {
+    line-height: 1.8;
+    opacity: 0;
+    animation: lineIn .3s ease forwards;
+  }
+  @keyframes lineIn { to { opacity: 1; } }
+  .out-ts { color: var(--faint); }
+  .out-info { color: var(--blue); }
+  .out-success { color: var(--green); }
+  .out-warn { color: #facc15; }
+  .out-key { color: var(--accent); }
+  .out-val { color: var(--white); }
+  .out-comment { color: var(--faint); }
+  .cursor-blink {
+    display: inline-block;
+    width: 7px; height: 13px;
+    background: var(--accent);
+    animation: blink 1s infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+  }
+
+  /* ── Agent feed ── */
+  .agent-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 2rem;
+  }
+  .agent-event {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 1.1rem 1.25rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  .agent-event.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .event-icon {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .icon-green { background: var(--green-dim); }
+  .icon-yellow { background: rgba(250,204,21,0.1); }
+  .icon-red { background: var(--red-dim); }
+  .icon-blue { background: var(--blue-dim); }
+  .event-body { flex: 1; }
+  .event-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .event-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .event-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .event-pill {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    letter-spacing: .04em;
+  }
+  .pill-green { background: var(--green-dim); color: var(--green); }
+  .pill-yellow { background: rgba(250,204,21,0.1); color: #facc15; }
+  .pill-blue { background: var(--blue-dim); color: var(--blue); }
+  .pill-red { background: var(--red-dim); color: var(--red); }
+  .event-time { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-left: auto; }
+
+  .approve-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 12px;
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(74,222,128,0.2);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .approve-btn:hover { background: rgba(74,222,128,0.2); }
+  .approved-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 12px;
+    background: var(--green-dim);
+    color: var(--green);
+    border-radius: 3px;
+    display: none;
+  }
+
+  /* ── How it works ── */
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  @media(max-width:700px){ .steps-grid { grid-template-columns: 1fr 1fr; } }
+  .step-card {
+    background: var(--off-black);
+    padding: 1.75rem 1.5rem;
+  }
+  .step-num {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--accent);
+    opacity: .25;
+    margin-bottom: .75rem;
+  }
+  .step-card h3 { font-size: 14px; font-weight: 500; margin-bottom: .5rem; }
+  .step-card p { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+  /* ── Compare ── */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .compare-table th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--faint);
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+  .compare-table th.ours { color: var(--accent); }
+  .compare-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    vertical-align: middle;
+  }
+  .compare-table td:first-child { color: var(--white); font-weight: 500; }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .chk { color: var(--green); }
+  .xmk { color: rgba(255,255,255,0.15); }
+  .hmk { color: #facc15; }
+  .ours-val { color: var(--accent); font-weight: 500; }
+
+  /* ── Traction / metrics ── */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 4rem;
+  }
+  @media(max-width:600px){ .metrics-row { grid-template-columns: 1fr 1fr; } }
+  .metric {
+    background: var(--off-black);
+    padding: 2rem 1.5rem;
+    text-align: center;
+  }
+  .metric-num {
+    font-family: var(--serif);
+    font-size: 3rem;
+    font-weight: 400;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: .4rem;
+  }
+  .metric-label { font-size: 12px; color: var(--muted); }
+
+  /* ── CTA ── */
+  .cta-section {
+    text-align: center;
+    padding: 6rem 2rem 8rem;
+    position: relative;
+    z-index: 1;
+  }
+  .cta-section h2 {
+    font-family: var(--serif);
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    font-weight: 400;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+  }
+  .cta-section h2 em { font-style: italic; color: var(--accent); }
+  .cta-section p {
+    font-size: 1rem;
+    color: var(--muted);
+    max-width: 480px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+  }
+  .cta-form {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+  .cta-input {
+    flex: 1;
+    min-width: 220px;
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 12px 16px;
+    background: var(--card);
+    border: 1px solid var(--border-bright);
+    border-radius: 4px;
+    color: var(--white);
+    outline: none;
+    transition: border-color .2s;
+  }
+  .cta-input::placeholder { color: var(--faint); }
+  .cta-input:focus { border-color: var(--accent); }
+
+  /* ── Footer ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  footer .logo { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  footer p { font-size: 12px; color: var(--faint); }
+
+  /* ── Divider ── */
+  .full-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--card);
+    border: 1px solid var(--accent-mid);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 12px 20px;
+    border-radius: 6px;
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all .3s ease;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">agentbase_</div>
+  <div class="nav-links">
+    <a href="#demo">Demo</a>
+    <a href="#agent">Agent</a>
+    <a href="#compare">vs Supabase</a>
+    <a href="#waitlist">Waitlist</a>
+  </div>
+  <button class="nav-cta" onclick="scrollTo('waitlist')">Get early access</button>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">
+    <span class="badge-dot"></span>
+    Live demo · YC Build Sprint 2025
+  </div>
+  <h1>The backend that<br><em>engineers itself</em></h1>
+  <p class="hero-sub">
+    Describe your app in plain English. Get a production-ready backend — database, auth, APIs, real-time, and a self-healing agent watching it 24/7.
+  </p>
+  <div class="hero-actions">
+    <button class="btn-primary" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">See it live →</button>
+    <button class="btn-secondary" onclick="document.getElementById('compare').scrollIntoView({behavior:'smooth'})">How it compares</button>
+  </div>
+  <div class="scroll-hint">
+    <span>scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</div>
+
+<hr class="full-divider">
+
+<!-- Problem -->
+<section>
+  <div class="section-label">The problem</div>
+  <h2 class="section-title">Developers spend 40% of their time<br><em>on backend plumbing</em></h2>
+  <p class="section-sub">Schema design, migrations, auth wiring, query optimisation, index tuning — none of it builds your product. All of it is required.</p>
+  <div class="problem-grid">
+    <div class="problem-card">
+      <div class="problem-num">01</div>
+      <h3>Manual schema design</h3>
+      <p>Every app starts with hours designing tables, relationships, and constraints — before a single line of product code is written.</p>
+    </div>
+    <div class="problem-card">
+      <div class="problem-num">02</div>
+      <h3>Databases silently degrade</h3>
+      <p>Slow queries accumulate. Missing indexes go unnoticed. Schema drift between code and DB causes production fires at 2am.</p>
+    </div>
+    <div class="problem-card">
+      <div class="problem-num">03</div>
+      <h3>No DBA on the team</h3>
+      <p>Early-stage startups have no dedicated database engineer. Senior engineers get pulled into ops instead of building.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider">
+
+<!-- Live demo -->
+<section id="demo">
+  <div class="section-label">Live demo</div>
+  <h2 class="section-title">Intent in.<br><em>Backend out.</em></h2>
+  <p class="section-sub">Pick an app type below and watch AgentBase design the schema, generate APIs, configure auth, and set up workflows — in real time.</p>
+
+  <div class="demo-wrap">
+    <div class="terminal-bar">
+      <div class="dot r"></div>
+      <div class="dot y"></div>
+      <div class="dot g"></div>
+      <div class="terminal-title">agentbase — intent engine v0.1</div>
+    </div>
+    <div class="demo-layout">
+      <div class="demo-input-side">
+        <div>
+          <div class="demo-label">Choose an intent</div>
+          <div class="intent-examples">
+            <button class="intent-chip active" onclick="selectIntent(this, 0)">→ Build a marketplace app</button>
+            <button class="intent-chip" onclick="selectIntent(this, 1)">→ SaaS analytics platform</button>
+            <button class="intent-chip" onclick="selectIntent(this, 2)">→ Social app with stories</button>
+            <button class="intent-chip" onclick="selectIntent(this, 3)">→ Increase user retention</button>
+          </div>
+        </div>
+        <button class="run-btn" id="runBtn" onclick="runDemo()">
+          <span id="runLabel">▶ Generate backend</span>
+        </button>
+        <div style="font-size:11px;color:var(--faint);font-family:var(--mono);line-height:1.7" id="demoMeta"></div>
+      </div>
+      <div class="demo-output-side" id="demoOutput">
+        <div style="color:var(--faint);font-family:var(--mono);font-size:12px">
+          ← Select an intent and click generate
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider">
+
+<!-- Agentic DBA feed -->
+<section id="agent">
+  <div class="section-label">The autonomous DBA agent</div>
+  <h2 class="section-title">Your database,<br><em>always watched.</em></h2>
+  <p class="section-sub">Once deployed, the agent monitors your Postgres instance 24/7 — finding slow queries, missing indexes, and schema drift — then proposes and applies fixes. You approve what matters. It handles the rest.</p>
+
+  <div class="agent-feed" id="agentFeed">
+    <div class="agent-event" id="ev0">
+      <div class="event-icon icon-green">⚡</div>
+      <div class="event-body">
+        <div class="event-title">Missing index detected</div>
+        <div class="event-desc">Table <code style="color:var(--accent)">listings</code> — column <code style="color:var(--accent)">seller_id</code> has no index. 847 queries/hr doing full table scans. Estimated fix: 12ms → 0.4ms avg query time.</div>
+        <div class="event-meta">
+          <span class="event-pill pill-yellow">needs approval</span>
+          <code style="font-size:10px;color:var(--faint)">CREATE INDEX CONCURRENTLY idx_listings_seller_id ON listings(seller_id)</code>
+          <button class="approve-btn" onclick="approveEvent(0)">Approve →</button>
+          <span class="approved-badge" id="ab0">✓ Applied</span>
+          <span class="event-time">2 min ago</span>
+        </div>
+      </div>
+    </div>
+    <div class="agent-event" id="ev1">
+      <div class="event-icon icon-blue">🔍</div>
+      <div class="event-body">
+        <div class="event-title">Slow query identified</div>
+        <div class="event-desc">Query on <code style="color:var(--accent)">orders</code> joining <code style="color:var(--accent)">users</code> averaging 2,340ms. N+1 pattern detected. Rewrote with single JOIN — 18× faster in staging.</div>
+        <div class="event-meta">
+          <span class="event-pill pill-blue">auto-applied in staging</span>
+          <button class="approve-btn" onclick="approveEvent(1)">Promote to prod →</button>
+          <span class="approved-badge" id="ab1">✓ Promoted</span>
+          <span class="event-time">14 min ago</span>
+        </div>
+      </div>
+    </div>
+    <div class="agent-event" id="ev2">
+      <div class="event-icon icon-green">✅</div>
+      <div class="event-body">
+        <div class="event-title">Schema drift resolved</div>
+        <div class="event-desc">Model <code style="color:var(--accent)">Product</code> defines field <code style="color:var(--accent)">discount_pct</code> but column missing in DB. Migration auto-generated and applied.</div>
+        <div class="event-meta">
+          <span class="event-pill pill-green">auto-fixed</span>
+          <span class="event-time">1 hr ago</span>
+        </div>
+      </div>
+    </div>
+    <div class="agent-event" id="ev3">
+      <div class="event-icon icon-yellow">⚠️</div>
+      <div class="event-body">
+        <div class="event-title">Connection spike — investigation complete</div>
+        <div class="event-desc">217 connections opened in 4s (normal: 12). Root cause: missing connection pooling in checkout service. Proposed fix: add PgBouncer config. No data loss.</div>
+        <div class="event-meta">
+          <span class="event-pill pill-yellow">proposal ready</span>
+          <button class="approve-btn" onclick="approveEvent(3)">Apply fix →</button>
+          <span class="approved-badge" id="ab3">✓ Applied</span>
+          <span class="event-time">3 hr ago</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider">
+
+<!-- How it works -->
+<section>
+  <div class="section-label">How it works</div>
+  <h2 class="section-title">Four steps.<br><em>Zero backend work.</em></h2>
+  <p class="section-sub" style="margin-bottom:2.5rem">From intent to a self-managing production backend in under two minutes.</p>
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-num">01</div>
+      <h3>Describe your app</h3>
+      <p>Plain English. "Build a marketplace where sellers list products." No schema, no SQL, no configuration.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">02</div>
+      <h3>AI designs the backend</h3>
+      <p>Schema, auth roles, RLS policies, APIs, real-time subscriptions, and workflows — all generated and shown to you for review.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">03</div>
+      <h3>You approve, it deploys</h3>
+      <p>One click. Postgres schema applied, PostgREST serves your REST API, auth goes live, workflows register.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">04</div>
+      <h3>Agent watches forever</h3>
+      <p>The DBA agent monitors, optimises, and self-heals your database continuously. You get proposals. It handles execution.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider">
+
+<!-- Compare -->
+<section id="compare">
+  <div class="section-label">Comparison</div>
+  <h2 class="section-title">Everything Supabase does.<br><em>Plus the part it doesn't.</em></h2>
+  <p class="section-sub" style="margin-bottom:2rem">Supabase is a great database platform. We're the autonomous ops layer that sits on top of any Postgres — including Supabase.</p>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Firebase</th>
+          <th>Supabase</th>
+          <th class="ours">AgentBase</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Database</td><td class="chk">✓</td><td class="chk">✓</td><td class="ours-val chk">✓ auto-designed</td></tr>
+        <tr><td>Auth</td><td class="chk">✓</td><td class="chk">✓</td><td class="ours-val chk">✓ auto-configured</td></tr>
+        <tr><td>Auto-generated REST API</td><td class="xmk">—</td><td class="chk">✓</td><td class="ours-val chk">✓</td></tr>
+        <tr><td>Real-time</td><td class="chk">✓</td><td class="chk">✓</td><td class="ours-val chk">✓ auto-wired</td></tr>
+        <tr><td>Serverless functions</td><td class="chk">✓</td><td class="chk">✓</td><td class="ours-val chk">✓ intent-generated</td></tr>
+        <tr><td>Schema design from intent</td><td class="xmk">—</td><td class="xmk">—</td><td class="ours-val chk">✓</td></tr>
+        <tr><td>Autonomous migrations</td><td class="xmk">—</td><td class="xmk">—</td><td class="ours-val chk">✓</td></tr>
+        <tr><td>Query optimisation agent</td><td class="xmk">—</td><td class="xmk">—</td><td class="ours-val chk">✓ 24/7</td></tr>
+        <tr><td>Schema drift detection</td><td class="xmk">—</td><td class="xmk">—</td><td class="ours-val chk">✓ auto-fix</td></tr>
+        <tr><td>Self-healing on incidents</td><td class="xmk">—</td><td class="xmk">—</td><td class="ours-val chk">✓</td></tr>
+        <tr><td>Developer override / audit log</td><td class="hmk">partial</td><td class="hmk">partial</td><td class="ours-val chk">✓ every decision</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="full-divider">
+
+<!-- Metrics -->
+<section>
+  <div class="section-label">Early traction</div>
+  <h2 class="section-title" style="margin-bottom:2.5rem">Built by a 19-year-old<br><em>at BITS Pilani.</em></h2>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-num">&lt;2m</div><div class="metric-label">Intent to live API</div></div>
+    <div class="metric"><div class="metric-num">80%</div><div class="metric-label">Less backend work</div></div>
+    <div class="metric"><div class="metric-num">0</div><div class="metric-label">Manual migrations written</div></div>
+    <div class="metric"><div class="metric-num">24/7</div><div class="metric-label">Agent uptime</div></div>
+  </div>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:2rem;max-width:680px">
+    <p style="font-family:var(--serif);font-size:1.2rem;font-style:italic;color:var(--white);line-height:1.7;margin-bottom:1rem">
+      "I built an Amazon automation system in 7th grade during COVID. Six years later, I'm building the infrastructure layer that every AI-native startup will run on. Same instinct. Bigger problem."
+    </p>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--faint)">— Founder · BITS Pilani · Agentic AI Club Lead · Building in public</div>
+  </div>
+</section>
+
+<hr class="full-divider">
+
+<!-- CTA / Waitlist -->
+<div class="cta-section" id="waitlist">
+  <div class="section-label" style="display:block;text-align:center;margin-bottom:1rem">Early access</div>
+  <h2>Stop writing backends.<br><em>Start shipping products.</em></h2>
+  <p>Join the waitlist. First 100 developers get free access and direct line to the founder.</p>
+  <div class="cta-form">
+    <input class="cta-input" type="email" id="emailInput" placeholder="you@startup.com">
+    <button class="btn-primary" onclick="joinWaitlist()">Join waitlist →</button>
+  </div>
+  <p style="font-size:11px;color:var(--faint);margin-top:1rem;font-family:var(--mono)">No spam. No pitch decks. Just early access.</p>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="logo">agentbase_</div>
+  <p>Built at BITS Pilani · YC Build Sprint 2025</p>
+  <p style="font-family:var(--mono);font-size:11px;color:var(--faint)">The backend that engineers itself.</p>
+</footer>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let selectedIntent = 0;
+
+  const intents = [
+    {
+      label: 'Build a marketplace app',
+      steps: [
+        ['info', 'Parsing intent...'],
+        ['key', 'app_type', '"marketplace"'],
+        ['key', 'entities_detected', '["users","listings","orders","reviews","messages"]'],
+        ['key', 'auth_roles', '["buyer","seller","admin"]'],
+        ['info', 'Generating schema...'],
+        ['success', 'Table users created (5 fields, RLS enabled)'],
+        ['success', 'Table listings created (8 fields, indexed on seller_id, category)'],
+        ['success', 'Table orders created (6 fields, FK → listings, users)'],
+        ['success', 'Table reviews created (4 fields, FK → orders)'],
+        ['info', 'Configuring auth...'],
+        ['success', 'RLS policies generated for buyer/seller roles'],
+        ['success', 'OAuth providers configured (Google, GitHub)'],
+        ['info', 'Generating workflows...'],
+        ['success', 'Workflow: notify-buyers-on-listing (auto-deployed)'],
+        ['success', 'Workflow: send-order-confirmation (auto-deployed)'],
+        ['success', 'Workflow: seller-payout-trigger (pending approval)'],
+        ['info', 'Starting real-time subscriptions...'],
+        ['success', 'LISTEN/NOTIFY enabled on: listings, orders, messages'],
+        ['success', 'REST API live → GET /listings, /orders, /users'],
+        ['success', '✓ Backend deployed in 94 seconds'],
+      ],
+      meta: '5 tables · 3 auth roles · 3 workflows · 3 real-time channels'
+    },
+    {
+      label: 'SaaS analytics platform',
+      steps: [
+        ['info', 'Parsing intent...'],
+        ['key', 'app_type', '"saas_analytics"'],
+        ['key', 'entities_detected', '["workspaces","events","metrics","dashboards","users"]'],
+        ['key', 'auth_roles', '["admin","analyst","viewer"]'],
+        ['info', 'Generating schema...'],
+        ['success', 'Hypertable events created (time-series optimised)'],
+        ['success', 'Table metrics created (pre-aggregation enabled)'],
+        ['success', 'Table dashboards created (JSONB config field)'],
+        ['info', 'Optimising for time-series queries...'],
+        ['success', 'Continuous aggregate: daily_events_rollup'],
+        ['success', 'Retention policy: 90 days raw, 2yr rollup'],
+        ['success', 'REST API live → GET /events, /metrics, /dashboards'],
+        ['success', '✓ Backend deployed in 67 seconds'],
+      ],
+      meta: '5 tables · 3 auth roles · time-series optimised'
+    },
+    {
+      label: 'Social app with stories',
+      steps: [
+        ['info', 'Parsing intent...'],
+        ['key', 'app_type', '"social"'],
+        ['key', 'entities_detected', '["users","posts","stories","follows","likes","comments"]'],
+        ['key', 'realtime_needed', '["stories","likes","comments","notifications"]'],
+        ['info', 'Generating schema...'],
+        ['success', 'Table users (profile, avatar bucket auto-created on R2)'],
+        ['success', 'Table stories (expires_at field, 24hr TTL job scheduled)'],
+        ['success', 'Table follows (composite PK: follower_id, following_id)'],
+        ['info', 'Setting up real-time feed...'],
+        ['success', 'WebSocket channels: stories, notifications, likes'],
+        ['success', 'Workflow: story-expiry-cleanup (cron: every hour)'],
+        ['success', 'Workflow: new-follower-notification (event-driven)'],
+        ['success', '✓ Backend deployed in 81 seconds'],
+      ],
+      meta: '6 tables · 4 real-time channels · 2 scheduled workflows'
+    },
+    {
+      label: 'Increase user retention',
+      steps: [
+        ['info', 'Parsing intent as goal (not schema)...'],
+        ['key', 'goal_type', '"retention_optimisation"'],
+        ['key', 'analysing', 'existing schema for retention signals...'],
+        ['info', 'Creating monitoring tables...'],
+        ['success', 'Table user_events created (activity tracking)'],
+        ['success', 'Table cohorts created (auto-segmented by signup week)'],
+        ['success', 'Table nudge_log created (audit trail for all comms)'],
+        ['info', 'Deploying retention agent...'],
+        ['success', 'Agent: detect-dormant-users (runs every 24h)'],
+        ['success', 'Agent: churn-risk-classifier (high/med/low scoring)'],
+        ['success', 'Agent: re-engagement-trigger (personalised per cohort)'],
+        ['warn',   'Proposal: add last_active_at index to users — awaiting approval'],
+        ['success', '✓ Retention engine live'],
+      ],
+      meta: '3 new tables · 3 autonomous agents · goal-oriented mode'
+    }
+  ];
+
+  function selectIntent(el, idx) {
+    document.querySelectorAll('.intent-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    selectedIntent = idx;
+    document.getElementById('demoOutput').innerHTML = '<div style="color:var(--faint);font-family:var(--mono);font-size:12px">← Click generate to run</div>';
+    document.getElementById('demoMeta').textContent = '';
+  }
+
+  function runDemo() {
+    const btn = document.getElementById('runBtn');
+    const label = document.getElementById('runLabel');
+    const output = document.getElementById('demoOutput');
+    btn.disabled = true;
+    label.textContent = '⏳ Running...';
+    output.innerHTML = '';
+
+    const intent = intents[selectedIntent];
+    let i = 0;
+
+    function addLine() {
+      if (i >= intent.steps.length) {
+        btn.disabled = false;
+        label.textContent = '▶ Run again';
+        document.getElementById('demoMeta').textContent = intent.meta;
+        return;
+      }
+      const [type, ...parts] = intent.steps[i];
+      const now = new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      let html = `<div class="output-line" style="animation-delay:0s">`;
+      html += `<span class="out-ts">[${now}] </span>`;
+      if (type === 'info')    html += `<span class="out-info">ℹ  ${parts[0]}</span>`;
+      if (type === 'success') html += `<span class="out-success">✓  ${parts[0]}</span>`;
+      if (type === 'warn')    html += `<span class="out-warn">⚠  ${parts[0]}</span>`;
+      if (type === 'key')     html += `<span class="out-key">${parts[0]}</span><span class="out-comment"> → </span><span class="out-val">${parts[1]}</span>`;
+      html += `</div>`;
+      output.innerHTML += html;
+      output.scrollTop = output.scrollHeight;
+      i++;
+      setTimeout(addLine, type === 'info' ? 600 : 280);
+    }
+
+    addLine();
+  }
+
+  // Animate agent feed in on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) e.target.classList.add('visible');
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.agent-event').forEach((el, i) => {
+    el.style.transitionDelay = `${i * 0.12}s`;
+    observer.observe(el);
+  });
+
+  function approveEvent(idx) {
+    const btn = document.querySelector(`#ev${idx} .approve-btn`);
+    const badge = document.getElementById(`ab${idx}`);
+    if (btn) btn.style.display = 'none';
+    if (badge) badge.style.display = 'inline-block';
+    showToast('✓ Approved and applied to production');
+  }
+
+  function joinWaitlist() {
+    const email = document.getElementById('emailInput').value;
+    if (!email || !email.includes('@')) {
+      showToast('Enter a valid email first');
+      return;
+    }
+    document.getElementById('emailInput').value = '';
+    showToast(`✓ ${email} added to waitlist. We'll be in touch.`);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  // Auto-run demo on load after short delay
+  setTimeout(() => runDemo(), 1200);
+</script>
+</body>
+</html>
