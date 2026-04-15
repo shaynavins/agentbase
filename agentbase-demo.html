@@ -915,9 +915,12 @@
   <h2>Stop writing backends.<br><em>Start shipping products.</em></h2>
   <p>Join the waitlist. First 100 developers get free access and direct line to the founder.</p>
   <div class="cta-form">
-     <form name="waitlist" method="POST" data-netlify="true">
-  <input type="email" name="email" />
-  <button type="submit">Join</button>
+<form name="waitlist" method="POST" data-netlify="true" onsubmit="event.preventDefault(); joinWaitlist();">
+  <input type="hidden" name="form-name" value="waitlist" />
+
+  <input class="cta-input" type="email" name="email" placeholder="you@startup.com" required />
+  
+  <button class="btn-primary" type="submit">Join waitlist →</button>
 </form>
     <input class="cta-input" type="email" id="emailInput" placeholder="you@startup.com">
     <button class="btn-primary" onclick="joinWaitlist()">Join waitlist →</button>
